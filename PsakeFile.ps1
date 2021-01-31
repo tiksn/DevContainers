@@ -41,14 +41,18 @@ Task EstimateNextVersion {
     Assert ( $script:NextVersion.Revision -eq -1 ) 'Revision must be -1'
     Assert ( $script:NextVersion.Build -ge 0 ) 'Build must be greater than or equal to 0'
 
-    Remove-Variable -name NextVersionTag -Scope Script -Force -ErrorAction Ignore
+    Remove-Variable -Name NextVersionTag -Scope Script -Force -ErrorAction Ignore
     Set-Variable -Name NextVersionTag -Value ($script:NextVersion.ToString()) -Option ReadOnly -Scope Script -Visibility Public
 }
 
 Task BuildDockerImage -depends EstimateNextVersion {
+    $tag = "$($Repository):$script:NextVersionTag"
 
+    Exec { docker build --file $Dockerfile --tag $tag . }
 }
 
 Task PushDockerImage -depends BuildDockerImage, DockerLogin {
+    $tag = "$($Repository):$script:NextVersionTag"
 
+    Exec { docker push $tag }
 }
